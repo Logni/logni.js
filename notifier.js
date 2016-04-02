@@ -1,11 +1,3 @@
-var SiUXNotifierParam = {
-        'id'                    : '0d7061a0f59ca031d7246f5bf7b849ba', 
-        'urlNotify'             : '//#{RUM_HOSTNAME_ONLINE}/notifier',
-        'urlJsLogni'            : '/js/ni/logni.js?v=${now()}',
-        'debug'                 : ${._developMode},
-        'captureUncaught'       : true
-};
-
 var SiUXNotifier = {};
 
 SiUXNotifier.urlNotify          = 'https://logni-online.esiux.com/notifier';
