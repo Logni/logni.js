@@ -57,9 +57,10 @@ function obj2str(obj)
 
 var log = (function() {
 
-        var _mask = {'INFO':5, 'ERR':5, 'FATAL':5, 'DBG':5, 'WARN':5};
-        var _file = '';
-        var _stderr = 0;
+        var _mask       = {'INFO':5, 'ERR':5, 'FATAL':5, 'DBG':5, 'WARN':5};
+        var _file       = '';
+        var _stderr     = 0;
+        var _method     = 'GET';
 
         return {
                 file: function(iFile)
@@ -69,6 +70,10 @@ var log = (function() {
                 stderr: function(iStderr)
                 {
                         _stderr = iStderr;
+                },
+                method: function(iMethod)
+                {
+                        _method = iMethod;
                 },
                 mask: function(iMask) 
                 {
@@ -103,24 +108,75 @@ var log = (function() {
                 },
                 ni: function(msg, paramList, mask, depth)
                 {
-                        if (_mask[mask] == undefined)
-                                return;
+                        var data = null;
+                        if (arguments.length > 4)
+                                data = arguments[4];
 
-                        if (_mask[mask] > depth)
-                                return;
+                        // send more logs at once
+                        if (msg instanceof Array) {
 
-                        /*
-                        console.log(mask);
-                        console.log(depth);
-                        console.log(paramList);
-                        console.log(_file);
-                        */
+                                if ( !(paramList instanceof Array) || !(mask instanceof Array) || !(depth instanceof Array) )
+                                        return;
 
-                        for (var i=0; i<paramList.length; i++) {
-                                if (msg.indexOf("%s") == -1)
-                                        break;
+                                var msgCnt = msg.length;
 
-                                msg = msg.replace(/%s/, obj2str( paramList[i] ) );
+                                if (data) {
+                                        if ( !(data instanceof Array) )
+                                                return;
+
+                                        if (data.length != msgCnt)
+                                                return;
+                                }
+
+                                if (paramList.length != msgCnt || mask.length != msgCnt || depth.length != msgCnt)
+                                        return;
+                        }
+                        else {
+                                msg             = [msg];
+                                paramList       = [paramList];
+                                mask            = [mask];
+                                depth           = [depth];
+                                data            = [data];
+                        }
+
+                        var reqData = [];
+
+                        for (var i=0; i<msg.length; i++) {
+
+                                itemMsg       = msg[i];
+                                itemParamList = paramList[i];
+                                itemMask      = mask[i];
+                                itemDepth     = depth[i];
+                                itemData      = data[i];
+
+                                if (_mask[itemMask] == undefined)
+                                        return;
+
+                                if (_mask[itemMask] > itemDepth)
+                                        return;
+
+                                for (var j=0; j<itemParamList.length; j++) {
+                                        if (itemMsg.indexOf("%s") == -1)
+                                                break;
+
+                                        msg[i] = itemMsg = itemMsg.replace(/%s/, obj2str( itemParamList[j] ) );
+                                }
+
+                                var dataPostfix = '';
+                                if (msg.length > 1)
+                                        dataPostfix = '_' + i.toString();
+
+                                reqData.push( 'mask' + dataPostfix + '=' + itemMask );
+                                reqData.push( 'depth' + dataPostfix + '=' + itemDepth );
+                                reqData.push( 'msg' + dataPostfix + '=' +  encodeURIComponent(itemMsg) );
+
+                                if (itemData) {
+                                        for (var prop in itemData) {
+                                                if ( itemData.hasOwnProperty(prop) ) {
+                                                        reqData.push( encodeURIComponent(prop) + dataPostfix + "=" + encodeURIComponent( itemData[prop] ) );
+                                                }
+                                        }
+                                }
                         }
 
                         if (_file != '') {
@@ -129,45 +185,60 @@ var log = (function() {
                                 if (typeof XMLHttpRequest !== 'undefined') 
                                         xhr = new XMLHttpRequest();
                                 else {  
-                                        var versions = ["MSXML2.XmlHttp.5.0",   
-                                                        "MSXML2.XmlHttp.4.0",  
-                                                        "MSXML2.XmlHttp.3.0",   
-                                                        "MSXML2.XmlHttp.2.0",  
-                                                        "Microsoft.XmlHttp"]  
+                                        var versions = ["Msxml2.XMLHTTP", "Msxml3.XMLHTTP", "Microsoft.XMLHTTP"]
                           
-                                        for (var i = 0, len = versions.length; i < len; i++) {  
+                                        for (var i=0; i<versions.length; i++) {  
                                                 try {  
                                                         xhr = new ActiveXObject(versions[i]);  
                                                         break;  
                                                 }  
-                                                catch(e) {}  
+                                                catch(e) {}
                                         }
                                 }  
-                                  
-                                xhr.onreadystatechange = function ensureReadiness()
-                                {  
-                                        if (xhr.readyState == 4 && xhr.status !== 200) {
-                                                console.log("ERR: log.ni('" + msg + "', (" + paramList + "), '" + mask + "', " + depth + "): " + xhr.status);
-                                                return; 
-                                        }
-                                        else {
-                                                //console.log(xhr.readyState);
-                                        }
-                                      
-                                        if (xhr.readyState === 4) {  
-                                                //console.log( xhr.responseText );
-                                        }             
-                                }  
-                                
-                                //console.log(logUrl + "?mask=" + mask + "&depth=" + depth + "&msg=" + encodeURIComponent(msg)) ;
+                                 
+                                try { 
+                                        xhr.onreadystatechange = function ensureReadiness()
+                                        {  
+                                                try {
+                                                        if (xhr.readyState === 4 && xhr.status !== 200) {
+                                                                try {
+                                                                        for (var i=0; i<msg.length; i++) {
+                                                                                console.log("ERR: log.ni('" + msg[i] + "', (" + paramList[i] + "), '" + mask[i] + "', " + depth[i] + "): " + xhr.status);
+                                                                        }
+                                                                } catch(e) {}
+                                                                return; 
+                                                        }
+                                                        else {
+                                                                //console.log(xhr.readyState);
+                                                        }
+                                                      
+                                                        if (xhr.readyState === 4) {
+                                                                //console.log( xhr.responseText );
+                                                        }
+                                                } catch(e) {}
+                                        }  
+                                        
+                                        var xhrArgs = "?" + reqData.join("&");
+                                        var xhrData = null;
 
-                                xhr.open('GET', _file + "?mask=" + mask + "&depth=" + depth + "&msg=" + encodeURIComponent(msg), true);  
-                                xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-                                xhr.send();
+                                        if (_method == 'POST') {
+                                                xhrArgs = '';
+                                                xhrData = reqData.join("&");
+                                        }
+
+                                        xhr.open(_method, _file + xhrArgs, true);  
+                                        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+                                        xhr.send(xhrData);
+                                }
+                                catch(e) {}
                         }
 
                         if (_stderr == 1) {
-                                console.log(mask + " = " + depth + ": " + msg);
+                                try {
+                                        for (var i=0; i<msg.length; i++) {
+                                                console.log(mask[i] + " = " + depth[i] + ": " + msg[i]);
+                                        }
+                                } catch(e) {}
                         }
                 }
         };
