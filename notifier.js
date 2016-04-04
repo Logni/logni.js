@@ -1,19 +1,3 @@
-var SiUXNotifierParam = {
-        'id'                    : '0d7061a0f59ca031d7246f5bf7b849ba', 
-        'urlNotify'             : '//#{RUM_HOSTNAME_ONLINE}/notifier',
-        'urlJsLogni'            : '/js/ni/logni.js?v=${now()}',
-        'debug'                 : ${._developMode},
-        'captureUncaught'       : true,
-        'data'                  : {
-                'environment'           : 'siux-webometr',
-                'revision'              : '2.1.24',
-                'personId'              : 1889,
-                'personUsername'        : 'Pavel Svatoň',
-                'personEmail'           : 'pavelsvaton1@gmail.com'
-        }
-};
-
-
 Cookie = {
         set: function(input)
         {
