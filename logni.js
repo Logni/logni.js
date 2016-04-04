@@ -112,6 +112,10 @@ var log = (function() {
                         if (arguments.length > 4)
                                 data = arguments[4];
 
+                        var callback = null;
+                        if (arguments.length > 5)
+                                callback = arguments[5];
+
                         // send more logs at once
                         if (msg instanceof Array) {
 
@@ -200,20 +204,24 @@ var log = (function() {
                                         xhr.onreadystatechange = function ensureReadiness()
                                         {  
                                                 try {
-                                                        if (xhr.readyState === 4 && xhr.status !== 200) {
+                                                        if (xhr.readyState === 4) {
+
+                                                                if (xhr.status == 200 && callback) {
+                                                                        callback( JSON.parse(xhr.responseText) );
+                                                                        return;
+                                                                }
+
                                                                 try {
                                                                         for (var i=0; i<msg.length; i++) {
                                                                                 console.log("ERR: log.ni('" + msg[i] + "', (" + paramList[i] + "), '" + mask[i] + "', " + depth[i] + "): " + xhr.status);
                                                                         }
                                                                 } catch(e) {}
-                                                                return; 
-                                                        }
-                                                        else {
-                                                                //console.log(xhr.readyState);
-                                                        }
-                                                      
-                                                        if (xhr.readyState === 4) {
-                                                                //console.log( xhr.responseText );
+
+                                                                if (callback)
+                                                                        callback({
+                                                                                'statusCode'    : 'SERVICE_UNAVAILABLE',
+                                                                                'status'        : 503
+                                                                        }); 
                                                         }
                                                 } catch(e) {}
                                         }  
