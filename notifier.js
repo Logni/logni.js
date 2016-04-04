@@ -1,11 +1,79 @@
+var SiUXNotifierParam = {
+        'id'                    : '0d7061a0f59ca031d7246f5bf7b849ba', 
+        'urlNotify'             : '//#{RUM_HOSTNAME_ONLINE}/notifier',
+        'urlJsLogni'            : '/js/ni/logni.js?v=${now()}',
+        'debug'                 : ${._developMode},
+        'captureUncaught'       : true,
+        'data'                  : {
+                'environment'           : 'siux-webometr',
+                'revision'              : '2.1.24',
+                'personId'              : 1889,
+                'personUsername'        : 'Pavel Svatoň',
+                'personEmail'           : 'pavelsvaton1@gmail.com'
+        }
+};
+
+
+Cookie = {
+        set: function(input)
+        {
+                var name = "";
+                if (input.name)
+                        name = input.name;
+
+                var value = "";
+                if (input.value)
+                        value = input.value;
+
+                var tenYearsAhead = new Date();
+                tenYearsAhead.setFullYear(tenYearsAhead.getFullYear() + 10);
+
+                var expiry = tenYearsAhead.toUTCString();
+                if (input.expiry)
+                        expiry = input.expiry.toUTCString();
+
+                var path = "/";
+                if (input.path)
+                        path = input.path;
+
+                var domain = "";
+                if (input.domain)
+                        domain = input.domain;
+
+                document.cookie = escape(name) + "=" + escape(value) + "; expires=" + expiry + "; path=" + path + "; domain=" + domain;
+        },
+        get: function(name)
+        {
+                var cookieFinder = new RegExp("(^|;) ?" + name + "=([^;]*)(;|$)");
+                var cookie = document.cookie.match(cookieFinder);
+
+                var value = "";
+                if (cookie)
+                        value = unescape( cookie[2] );
+
+                return value;
+        }
+};
+
+
 var SiUXNotifier = {};
 
 SiUXNotifier.urlNotify          = 'https://logni-online.esiux.com/notifier';
-SiUXNotifier.urlJsLogni         = 'https://logni.esiux.com/js/logni/logni.min.js';
+SiUXNotifier.urlJsLogni         = 'https://logni-statis.esiux.com/js/logni/logni.min.js';
 SiUXNotifier.debug              = false;
 SiUXNotifier.captureUncaught    = false;
 SiUXNotifier.loadScriptAsync    = false;
 SiUXNotifier.logMask            = 'I3E1F1W2';
+SiUXNotifier.session            = null;                                                 // all requests on one page from one client
+SiUXNotifier.userIdentCookie    = 'ni-notifier-userid';
+SiUXNotifier.userIdent          = Cookie.get(SiUXNotifier.userIdentCookie);
+SiUXNotifier.clientData         = {
+        'environment'           : null,
+        'revision'              : null,
+        'personId'              : null,
+        'personUsername'        : null,
+        'personEmail'           : null
+}
 
 SiUXNotifier.init = function()
 {
@@ -17,6 +85,7 @@ SiUXNotifier.init = function()
         SiUXNotifier.logList            = [];
         SiUXNotifier.errList            = [];
         SiUXNotifier.docLocOrigin       = document.location.protocol + "//" + document.location.hostname + document.location.pathname;
+        SiUXNotifier.sendingFirstLog    = false;
 
         if (typeof SiUXNotifierParam.urlNotify !== 'undefined')
                 SiUXNotifier.urlNotify = SiUXNotifierParam.urlNotify;
@@ -35,6 +104,33 @@ SiUXNotifier.init = function()
 
         if (typeof SiUXNotifierParam.logMask !== 'undefined')
                 SiUXNotifier.logMask = SiUXNotifierParam.logMask;
+
+        if (typeof SiUXNotifierParam.data !== 'undefined') {
+
+                for (var dataKey in SiUXNotifierParam.data) {
+
+                        try {
+                                if (dataKey == 'environment' || dataKey == 'revision' || dataKey == 'personUsername' || dataKey == 'personEmail')
+                                        SiUXNotifier.clientData[dataKey] = SiUXNotifierParam.data[dataKey].toString();
+                                
+                                else if (dataKey == 'personId')
+                                        SiUXNotifier.clientData[dataKey] = parseInt( SiUXNotifierParam.data[dataKey] );
+                        } catch(e) {
+                                SiUXNotifier.console('error', 'SiUX Notifier: Type of client data, ', e);
+                        }
+                }
+        }
+
+        // user identifier
+        if ( !SiUXNotifier.userIdent ) {
+                SiUXNotifier.userIdent = ( new Date().getTime().toString() + ( new Array(32).join().replace( /(.|$)/g, function() { return ( (Math.random()*36) | 0 ).toString(36) } ) ) ).substring(0, 32);
+
+                Cookie.set({
+                        'name'  : SiUXNotifier.userIdentCookie,
+                        'value' : SiUXNotifier.userIdent,
+                        'domain': document.location.hostname.split('.').slice(-2).join('.')     // secondlevel domain of a website
+                });
+        }
 
         setTimeout(function() { SiUXNotifier.addScript(SiUXNotifier.urlJsLogni, SiUXNotifier.logInit); }, 0);
 
@@ -133,7 +229,7 @@ SiUXNotifier.windowOnError = function()
                         'message'       : argList[0],
                         'source'        : argList[1],
                         'lineno'        : argList[2],
-                        'colno'         : argList[3],
+                        'colno'         : argList[3] || 0,
                         'stack'         : ''
                 }
 
@@ -212,6 +308,53 @@ SiUXNotifier.logInit = function()
         }
 }
 
+SiUXNotifier.setBasicData = function(data)
+{
+        // first request - send all data, other request - send only session
+        if (SiUXNotifier.session) {
+                data.session = SiUXNotifier.session;
+                return data;
+        }
+
+        SiUXNotifier.sendingFirstLog = true;
+
+        data.id         = SiUXNotifier.id;
+        data.origin     = encodeURIComponent(SiUXNotifier.docLocOrigin)
+        data.userIdent  = SiUXNotifier.userIdent;
+
+        // add client data
+        for (var clientDataKey in SiUXNotifier.clientData)
+                if ( SiUXNotifier.clientData[clientDataKey] )
+                        data[clientDataKey] = SiUXNotifier.clientData[clientDataKey];
+
+        return data;
+}
+
+SiUXNotifier.logniCallback = function(retLogniAdd)
+{
+        if ( !SiUXNotifier.session && retLogniAdd['statusCode'] == 'OK' )
+                SiUXNotifier.session = retLogniAdd.data.session;
+
+        SiUXNotifier.sendingFirstLog = false;
+}
+
+SiUXNotifier.logni = function(msg, paramList, mask, depth, data, logList)
+{
+        var timerFirstLog = setInterval( function() {
+
+                if ( !SiUXNotifier.sendingFirstLog ) {
+
+                        if (logList)
+                                data[0] = SiUXNotifier.setBasicData( data[0] );
+                        else
+                                data = SiUXNotifier.setBasicData(data);
+
+                        log.ni(msg, paramList, mask, depth, data, SiUXNotifier.logniCallback)
+                        clearTimeout(timerFirstLog);
+                }
+        }, 100);
+}
+
 SiUXNotifier.sendLog = function(logList)
 {
         if (logList.length == 0)
@@ -236,7 +379,7 @@ SiUXNotifier.sendLog = function(logList)
                 dataList.push( logInfo['data'] );
         }
 
-        log.ni(msgList, paramList, maskList, depthList, dataList);
+        SiUXNotifier.logni(msgList, paramList, maskList, depthList, dataList, true);
 }
 
 SiUXNotifier.log = function(msg, paramList, mask, depth)
@@ -264,10 +407,7 @@ SiUXNotifier.log = function(msg, paramList, mask, depth)
                 return;
         }
 
-        data.id         = SiUXNotifier.id;
-        data.origin     = encodeURIComponent(SiUXNotifier.docLocOrigin)
-
-        log.ni(msg, paramList, mask, depth, data);
+        SiUXNotifier.logni(msg, paramList, mask, depth, data, false);
 }
 
 SiUXNotifier.init();
