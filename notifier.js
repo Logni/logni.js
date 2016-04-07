@@ -43,7 +43,7 @@ Cookie = {
 var SiUXNotifier = {};
 
 SiUXNotifier.urlNotify          = 'https://logni-online.esiux.com/notifier';
-SiUXNotifier.urlJsLogni         = 'https://logni-statis.esiux.com/js/logni/logni.min.js';
+SiUXNotifier.urlJsLogni         = 'https://logni-static.esiux.com/js/logni/logni.min.js';
 SiUXNotifier.debug              = false;
 SiUXNotifier.captureUncaught    = false;
 SiUXNotifier.loadScriptAsync    = false;
