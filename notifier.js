@@ -2,7 +2,7 @@ var SiUXNotifier = {};
 
 SiUXNotifier.urlNotify          = 'https://logni-online.esiux.com/notifier';
 SiUXNotifier.urlJsLogni         = 'https://cdn-logni-static.esiux.com/js/logni/logni.min.js';
-SiUXNotifier.urlJsNotifier      = 'https://cdn-logni-static.esiux.com/js/logni/notifier_ext.min.js';
+SiUXNotifier.urlJsNotifier      = 'https://cdn-logni-static.esiux.com/js/logni/notifier_ext.min.js?v=0.0.2';
 SiUXNotifier.debug              = false;
 SiUXNotifier.captureUncaught    = false;
 SiUXNotifier.loadScriptAsync    = false;
