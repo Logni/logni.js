@@ -45,9 +45,9 @@ if (typeof SiUXNotifier === 'undefined')
 SiUXNotifier.userIdentCookie    = 'ni-notifier-userid';
 SiUXNotifier.userIdent          = Cookie.get(SiUXNotifier.userIdentCookie);
 SiUXNotifier.sendingFirstLog    = false;
-SiUXNotifier.docLocOrigin       = document.location.protocol + "//" + document.location.hostname + document.location.pathname;
+SiUXNotifier.docLocOrigin       = document.location.protocol + "//" + document.location.hostname + document.location.pathname + document.location.search;
 SiUXNotifier.session            = null;                                                                                                 // all requests on one page from one client
-SiUXNotifier.version            = '0.0.1';
+SiUXNotifier.version            = '0.0.2';
 
 SiUXNotifier.notifierInitExt = function()
 {
