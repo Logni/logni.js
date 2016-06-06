@@ -1,0 +1,33 @@
+
+{
+  "name": "logni.js",
+  "main": "dist/logni.js",
+  "title": "Logni.js",
+  "description": "Full-stack error tracking for all apps in javascript",
+  "version": "0.1.0",
+  "homepage": "https://github.com/Logni/logni.js",
+  "author": {
+    "name": "Logni",
+    "email": "hello@logni.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Logni/logni.js.git"
+  },
+  "bugs": "https://github.com/Logni/logni.js/issues",
+  "licenses": [
+    {
+      "type": "GNU",
+      "url": "https://github.com/Logni/logni.js/blob/master/LICENSE"
+    }
+  ],
+  "dependencies": {},
+  "keywords": [
+    "error",
+    "tracking",
+    "logni",
+    "logging",
+    "exceptions",
+    "clientside"
+  ]
+}
