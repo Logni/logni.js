@@ -1,8 +1,8 @@
 var SiUXNotifier = {};
 
 SiUXNotifier.urlNotify          = 'https://logni-online.esiux.com/notifier';
-SiUXNotifier.urlJsLogni         = 'https://cdn-logni-static.esiux.com/js/logni/logni.min.js';
-SiUXNotifier.urlJsNotifier      = 'https://cdn-logni-static.esiux.com/js/logni/notifier_ext.min.js?v=0.0.2';
+SiUXNotifier.urlJsLogni         = 'https://cdn-logni-static.esiux.com/js/logni/logni.min.js?v=__VERSION__';
+SiUXNotifier.urlJsNotifier      = 'https://cdn-logni-static.esiux.com/js/logni/notifier_ext.min.js?v=__VERSION__';
 SiUXNotifier.debug              = false;
 SiUXNotifier.captureUncaught    = false;
 SiUXNotifier.loadScriptAsync    = false;
@@ -14,7 +14,7 @@ SiUXNotifier.clientData         = {
         'personUsername'        : null,
         'personEmail'           : null
 }
-SiUXNotifier.versionInline      = '0.0.1';
+SiUXNotifier.versionInline      = '__VERSION__';
 
 SiUXNotifier.init = function()
 {
